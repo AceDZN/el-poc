@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const [conversation, setConversation] = useState<ElevenLabsConversation | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [status, setStatus] = useState('');
   const [msgs, setMsgs] = useState<any[]>([]);
   const [transcript, setTranscript] = useState<Conversation[]>([]);
@@ -99,13 +100,15 @@ const App: React.FC = () => {
         signedUrl: signedUrl,
         onConnect: () => {
           setIsConnected(true);
-          setIsSpeaking(true);
           setStatus('Connected');
+          conversation.setMicMuted(true);
+          setIsMuted(true);
         },
         onDisconnect: () => {
           setIsConnected(false);
           setIsSpeaking(false);
           setStatus('Disconnected');
+          setIsMuted(true);
         },
         onError: error => {
           console.error(error);
@@ -168,6 +171,22 @@ const App: React.FC = () => {
     setIsConnected(false);
     setIsSpeaking(false);
     setStatus('Conversation ended');
+  }
+
+  function handlePushToTalkStart() {
+    if (conversation && isConnected) {
+      conversation.setMicMuted(false);
+      setIsMuted(false);
+      setIsSpeaking(true);
+    }
+  }
+
+  function handlePushToTalkEnd() {
+    if (conversation && isConnected) {
+      conversation.setMicMuted(true);
+      setIsMuted(true);
+      setIsSpeaking(false);
+    }
   }
 
   function sendTextMessage(message: string) {
@@ -277,10 +296,10 @@ const App: React.FC = () => {
             />
             <PushToTalk
               isSessionActive={isConnected}
-              onMouseDown={() => {}}
-              onMouseUp={() => {}}
-              onTouchStart={() => {}}
-              onTouchEnd={() => {}}
+              onMouseDown={handlePushToTalkStart}
+              onMouseUp={handlePushToTalkEnd}
+              onTouchStart={handlePushToTalkStart}
+              onTouchEnd={handlePushToTalkEnd}
             />
 
             <input type='text' onChange={e => sendTextMessage(e.target.value)} />

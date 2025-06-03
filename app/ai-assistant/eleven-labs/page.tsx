@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const [conversation, setConversation] = useState<ElevenLabsConversation | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [status, setStatus] = useState('');
   const [msgs, setMsgs] = useState<any[]>([]);
   const [transcript, setTranscript] = useState<Conversation[]>([]);
@@ -95,17 +96,29 @@ const App: React.FC = () => {
       const signedUrl = await getSignedUrl();
 
       setStatus('Starting conversation...');
-      const conversation = await ElevenLabsConversation.startSession({
+      let conversation: ElevenLabsConversation | null = null;
+      
+      const handleSessionConnect = () => {
+        setIsConnected(true);
+        setStatus('Connected');
+        if (conversation) {
+          conversation.setMicMuted(true);
+        } else {
+          let to = setTimeout(() => {
+            (conversation as any)?.setMicMuted(true);
+            clearTimeout(to);
+          }, 1000);
+        }
+      };
+      
+      conversation = await ElevenLabsConversation.startSession({
         signedUrl: signedUrl,
-        onConnect: () => {
-          setIsConnected(true);
-          setIsSpeaking(true);
-          setStatus('Connected');
-        },
+        onConnect: handleSessionConnect,
         onDisconnect: () => {
           setIsConnected(false);
           setIsSpeaking(false);
           setStatus('Disconnected');
+          setIsMuted(true);
         },
         onError: error => {
           console.error(error);
@@ -155,9 +168,9 @@ const App: React.FC = () => {
       });
       setConversation(conversation);
     } catch (error) {
-      console.error('Failed to start conversation:', error);
-      setStatus('Failed to start conversation');
-      alert('Failed to start conversation');
+      console.error('page: Failed to start conversation:', error);
+      setStatus('page: Failed to start conversation');
+      alert('page: Failed to start conversation');
     }
   }
 
@@ -168,6 +181,22 @@ const App: React.FC = () => {
     setIsConnected(false);
     setIsSpeaking(false);
     setStatus('Conversation ended');
+  }
+
+  function handlePushToTalkStart() {
+    if (conversation && isConnected) {
+      conversation.setMicMuted(false);
+      setIsMuted(false);
+      setIsSpeaking(true);
+    }
+  }
+
+  function handlePushToTalkEnd() {
+    if (conversation && isConnected) {
+      conversation.setMicMuted(true);
+      setIsMuted(true);
+      setIsSpeaking(false);
+    }
   }
 
   function sendTextMessage(message: string) {
@@ -277,10 +306,10 @@ const App: React.FC = () => {
             />
             <PushToTalk
               isSessionActive={isConnected}
-              onMouseDown={() => {}}
-              onMouseUp={() => {}}
-              onTouchStart={() => {}}
-              onTouchEnd={() => {}}
+              onMouseDown={handlePushToTalkStart}
+              onMouseUp={handlePushToTalkEnd}
+              onTouchStart={handlePushToTalkStart}
+              onTouchEnd={handlePushToTalkEnd}
             />
 
             <input type='text' onChange={e => sendTextMessage(e.target.value)} />

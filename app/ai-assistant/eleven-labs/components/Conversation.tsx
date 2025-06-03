@@ -78,8 +78,8 @@ export function Conversation() {
       });
       setConversation(conversation);
     } catch (error) {
-      console.error('Failed to start conversation:', error);
-      alert('Failed to start conversation');
+      console.error('conversation: Failed to start conversation:', error);
+      alert('conversation: Failed to start conversation');
     }
   }
 

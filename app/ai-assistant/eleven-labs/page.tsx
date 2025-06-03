@@ -96,14 +96,24 @@ const App: React.FC = () => {
       const signedUrl = await getSignedUrl();
 
       setStatus('Starting conversation...');
-      const conversation = await ElevenLabsConversation.startSession({
-        signedUrl: signedUrl,
-        onConnect: () => {
-          setIsConnected(true);
-          setStatus('Connected');
+      let conversation: ElevenLabsConversation | null = null;
+      
+      const handleSessionConnect = () => {
+        setIsConnected(true);
+        setStatus('Connected');
+        if (conversation) {
           conversation.setMicMuted(true);
-          setIsMuted(true);
-        },
+        } else {
+          let to = setTimeout(() => {
+            (conversation as any)?.setMicMuted(true);
+            clearTimeout(to);
+          }, 1000);
+        }
+      };
+      
+      conversation = await ElevenLabsConversation.startSession({
+        signedUrl: signedUrl,
+        onConnect: handleSessionConnect,
         onDisconnect: () => {
           setIsConnected(false);
           setIsSpeaking(false);
@@ -158,9 +168,9 @@ const App: React.FC = () => {
       });
       setConversation(conversation);
     } catch (error) {
-      console.error('Failed to start conversation:', error);
-      setStatus('Failed to start conversation');
-      alert('Failed to start conversation');
+      console.error('page: Failed to start conversation:', error);
+      setStatus('page: Failed to start conversation');
+      alert('page: Failed to start conversation');
     }
   }
 
